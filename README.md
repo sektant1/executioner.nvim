@@ -35,7 +35,7 @@ Optional:
 ```lua
 {
   "sektant1/executioner.nvim",
-  cmd = "Executioner",
+  cmd = { "Executioner", "ExecutionerRerun" },
   keys = {
     { "<leader>er", function() require("executioner").run_scripts() end, desc = "Executioner: run script" },
   },
