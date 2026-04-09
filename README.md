@@ -1,8 +1,7 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="executioner.nvim" width="200" />
+<img src="assets/logo.png" alt="executioner.nvim" width="600" />
 
-# executioner.nvim
 
 Telescope-powered script runner for Neovim 0.10+
 
