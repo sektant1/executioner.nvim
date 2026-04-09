@@ -5,7 +5,7 @@ package = "executioner.nvim"
 version = MODREV .. "-" .. SPECREV
 
 description = {
-  summary = "Telescope-powered script runner for Neovim",
+  summary = "Telescope-powered script runner plugin for Neovim",
   detailed = [[
     Discover scripts in your project, pick one from a Telescope fuzzy finder,
     and run it in a terminal buffer (float, split, or toggleterm).
@@ -22,7 +22,7 @@ dependencies = {
 }
 
 source = {
-  url = "git://github.com/sektant1/executioner.nvim.git",
+  url = "git+https://github.com/sektant1/executioner.nvim.git",
 }
 
 build = {
