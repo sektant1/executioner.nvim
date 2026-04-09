@@ -1,5 +1,3 @@
-local helpers = require("tests.exec_helpers")
-
 describe("cache", function()
   local cache
   local cache_file

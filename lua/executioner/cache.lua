@@ -33,9 +33,23 @@ function M.get(script_path)
   return read_all()[script_path] or ''
 end
 
+local MAX_ENTRIES = 200
+
+local function trim(data)
+  local keys = vim.tbl_keys(data)
+  if #keys <= MAX_ENTRIES then
+    return
+  end
+  table.sort(keys)
+  for i = 1, #keys - MAX_ENTRIES do
+    data[keys[i]] = nil
+  end
+end
+
 function M.set(script_path, args)
   local data = read_all()
   data[script_path] = args
+  trim(data)
   write_all(data)
 end
 

@@ -1,6 +1,6 @@
 # executioner.nvim
 
-Telescope-powered script runner for Neovim 0.12+.
+Telescope-powered script runner for Neovim 0.10+.
 
 Discover scripts in your project, pick one from a fuzzy finder, and run it in a terminal buffer.
 

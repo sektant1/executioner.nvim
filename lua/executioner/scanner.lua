@@ -37,7 +37,7 @@ function M.scan()
 
   for name, type_ in vim.fs.dir(root, dir_opts) do
     if type_ == 'file' and not is_ignored(vim.fs.basename(name), opts.ignore) then
-      local full = root .. '/' .. name
+      local full = vim.fs.joinpath(root, name)
       local ext = name:match '%.([^.]+)$'
       local known = has_known_ext(name, opts.extensions)
       local exec = opts.include_executables and utils.is_executable(full)

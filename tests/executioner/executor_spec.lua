@@ -73,4 +73,54 @@ describe("executor", function()
     vim.notify = orig
     assert.is_true(warned)
   end)
+
+  it("rerun replays last script and args", function()
+    local script = { path = root .. "/compile.py", ext = "py", name = "compile" }
+    -- Stub terminal.run to capture what gets passed
+    local captured_cmd, captured_script
+    local terminal = require("executioner.terminal")
+    local orig_run = terminal.run
+    terminal.run = function(cmd, s)
+      captured_cmd = cmd
+      captured_script = s
+    end
+
+    executor.run(script, "--release")
+    -- _last should be set
+    assert.is_not_nil(executor._last)
+    assert.equals("--release", executor._last.raw_args)
+
+    -- Reset captures and rerun
+    captured_cmd = nil
+    captured_script = nil
+    executor.rerun()
+
+    assert.is_not_nil(captured_cmd)
+    assert.equals("python3", captured_cmd[1])
+    assert.equals(root .. "/compile.py", captured_cmd[2])
+    assert.equals("--release", captured_cmd[3])
+    assert.equals(script.path, captured_script.path)
+
+    terminal.run = orig_run
+  end)
+
+  it("rerun updates _last on each run", function()
+    local script_a = { path = root .. "/compile.py", ext = "py", name = "compile" }
+    local script_b = { path = root .. "/run.sh", ext = "sh", name = "run" }
+
+    -- Stub terminal
+    local terminal = require("executioner.terminal")
+    local orig_run = terminal.run
+    terminal.run = function() end
+
+    executor.run(script_a, "first")
+    assert.equals(script_a.path, executor._last.script.path)
+    assert.equals("first", executor._last.raw_args)
+
+    executor.run(script_b, "second")
+    assert.equals(script_b.path, executor._last.script.path)
+    assert.equals("second", executor._last.raw_args)
+
+    terminal.run = orig_run
+  end)
 end)

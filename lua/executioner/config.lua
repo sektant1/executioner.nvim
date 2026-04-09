@@ -45,9 +45,39 @@ M.defaults = {
 
 M.options = vim.deepcopy(M.defaults)
 
+---Validate top-level user options.
+---@param user table
+local function validate(user)
+  vim.validate({
+    scripts_dir = { user.scripts_dir, { 'string', 'function' }, true },
+    recursive = { user.recursive, 'boolean', true },
+    max_depth = { user.max_depth, 'number', true },
+    ignore = { user.ignore, 'table', true },
+    extensions = { user.extensions, 'table', true },
+    include_executables = { user.include_executables, 'boolean', true },
+    always_prompt_args = { user.always_prompt_args, 'boolean', true },
+    terminal = { user.terminal, 'table', true },
+    telescope = { user.telescope, 'table', true },
+    keymaps = { user.keymaps, 'table', true },
+    on_exit = { user.on_exit, 'function', true },
+  })
+  if user.terminal then
+    vim.validate({
+      ['terminal.type'] = { user.terminal.type, 'string', true },
+      ['terminal.split'] = { user.terminal.split, 'table', true },
+      ['terminal.float'] = { user.terminal.float, 'table', true },
+      ['terminal.auto_close'] = { user.terminal.auto_close, 'boolean', true },
+      ['terminal.start_insert'] = { user.terminal.start_insert, 'boolean', true },
+    })
+  end
+end
+
 ---Merge user options into defaults (deep).
 ---@param user table|nil
 function M.setup(user)
+  if user then
+    validate(user)
+  end
   M.options = vim.tbl_deep_extend('force', M.defaults, user or {})
   return M.options
 end

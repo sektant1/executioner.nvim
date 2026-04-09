@@ -3,34 +3,35 @@ local utils = require 'executioner.utils'
 
 local M = {}
 
-local function on_exit_factory(script)
-  return function(_, code, _)
-    if config.options.on_exit then
-      pcall(config.options.on_exit, code, script.path)
-    end
-    if code == 0 and config.options.terminal.auto_close then
-      vim.schedule(function()
-        vim.cmd 'close'
-      end)
-    else
-      utils.notify(('%s exited with code %d'):format(script.name, code))
-    end
-  end
-end
-
 local function start_term(buf, cmd, script)
-  vim.api.nvim_buf_call(buf, function()
-    vim.fn.jobstart(cmd, {
-      term = true, -- Neovim 0.10+ unified term flag
-      on_exit = on_exit_factory(script),
-    })
-  end)
+  local winid = vim.api.nvim_get_current_win()
+
   vim.keymap.set('n', 'q', function()
-    local win = vim.fn.bufwinid(buf)
-    if win ~= -1 then
-      vim.api.nvim_win_close(win, true)
+    if vim.api.nvim_win_is_valid(winid) then
+      vim.api.nvim_win_close(winid, true)
     end
   end, { buffer = buf, desc = 'Close Executioner terminal' })
+
+  vim.api.nvim_buf_call(buf, function()
+    vim.fn.jobstart(cmd, {
+      term = true,
+      on_exit = function(_, code, _)
+        vim.schedule(function()
+          if config.options.on_exit then
+            pcall(config.options.on_exit, code, script.path)
+          end
+          if code == 0 and config.options.terminal.auto_close then
+            if vim.api.nvim_win_is_valid(winid) then
+              vim.api.nvim_win_close(winid, true)
+            end
+          else
+            utils.notify(('%s exited with code %d'):format(script.name, code))
+          end
+        end)
+      end,
+    })
+  end)
+
   if config.options.terminal.start_insert then
     vim.cmd 'startinsert'
   end

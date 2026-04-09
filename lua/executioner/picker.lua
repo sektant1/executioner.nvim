@@ -4,6 +4,12 @@ local executor = require 'executioner.executor'
 local cache = require 'executioner.cache'
 local utils = require 'executioner.utils'
 
+local has_telescope, _ = pcall(require, 'telescope')
+if not has_telescope then
+  utils.err 'telescope.nvim is required but not installed. See :help executioner-requirements'
+  return {}
+end
+
 local pickers = require 'telescope.pickers'
 local finders = require 'telescope.finders'
 local conf = require('telescope.config').values

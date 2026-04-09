@@ -30,7 +30,7 @@ otherwise the interpreter is looked up from the configured extensions map.
 ==============================================================================
 2. REQUIREMENTS                                   *executioner-requirements*
 
-- Neovim >= 0.12
+- Neovim >= 0.10
 - telescope.nvim  https://github.com/nvim-telescope/telescope.nvim
 - plenary.nvim    https://github.com/nvim-lua/plenary.nvim
 
@@ -243,6 +243,8 @@ keymaps ~
 on_exit ~
     `fun(code: integer, script: string)` or `nil`
     Optional callback invoked after the script process exits.
+    Runs inside `vim.schedule`, so it is safe to call `vim.api.*`
+    and other API functions from this callback.
 
 ==============================================================================
 6. COMMANDS                                           *executioner-commands*
