@@ -1,0 +1,4 @@
+.luarc.json
+*.log
+/tmp/
+tests/.tests/
