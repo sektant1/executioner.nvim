@@ -27,7 +27,7 @@ describe("terminal", function()
   end)
 
   it("dispatches to split without error", function()
-    helpers.reset_config({ terminal = { type = "split", start_insert = false } })
+    helpers.reset_config({ terminal = { start_insert = false } })
     package.loaded["executioner.terminal"] = nil
     terminal = require("executioner.terminal")
 
@@ -39,7 +39,7 @@ describe("terminal", function()
   end)
 
   it("binds q keymap on terminal buffer", function()
-    helpers.reset_config({ terminal = { type = "split", start_insert = false } })
+    helpers.reset_config({ terminal = { start_insert = false } })
     package.loaded["executioner.terminal"] = nil
     terminal = require("executioner.terminal")
 
@@ -59,7 +59,7 @@ describe("terminal", function()
   it("on_exit callback fires", function()
     local exit_code = nil
     helpers.reset_config({
-      terminal = { type = "split", start_insert = false },
+      terminal = { start_insert = false },
       on_exit = function(code)
         exit_code = code
       end,
