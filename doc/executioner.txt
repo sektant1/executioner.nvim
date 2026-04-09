@@ -1,0 +1,248 @@
+*executioner.txt*    Telescope-powered script runner for Neovim
+
+Author:  Gabriel Fernandes
+License: MIT
+Homepage: https://github.com/sektant1/executioner.nvim
+
+==============================================================================
+CONTENTS                                              *executioner-contents*
+
+  1. Introduction .......................... |executioner-introduction|
+  2. Requirements .......................... |executioner-requirements|
+  3. Installation .......................... |executioner-installation|
+  4. Usage ................................. |executioner-usage|
+  5. Configuration ......................... |executioner-config|
+  6. Commands .............................. |executioner-commands|
+  7. Health check .......................... |executioner-health|
+
+==============================================================================
+1. INTRODUCTION                                   *executioner-introduction*
+                                                          *executioner*
+
+executioner.nvim is a Telescope extension that discovers scripts in your
+project, lets you pick one from a fuzzy finder, and runs it in a terminal
+buffer (split, float, or toggleterm).
+
+Scripts are detected by file extension or the executable bit. Shebangs are
+respected: an executable file with a shebang line is invoked directly;
+otherwise the interpreter is looked up from the configured extensions map.
+
+==============================================================================
+2. REQUIREMENTS                                   *executioner-requirements*
+
+- Neovim >= 0.12
+- telescope.nvim  https://github.com/nvim-telescope/telescope.nvim
+- plenary.nvim    https://github.com/nvim-lua/plenary.nvim
+
+Optional:
+- toggleterm.nvim https://github.com/akinsho/toggleterm.nvim
+  (only needed when |terminal.type| is set to `"toggleterm"`)
+
+==============================================================================
+3. INSTALLATION                                   *executioner-installation*
+
+lazy.nvim: >lua
+  {
+    "sektant1/executioner.nvim",
+    cmd = "Executioner",
+    keys = {
+      { "<leader>er", function() require("executioner").run_scripts() end,
+        desc = "Executioner: run script" },
+    },
+    dependencies = {
+      "nvim-telescope/telescope.nvim",
+      "nvim-lua/plenary.nvim",
+    },
+    opts = {},
+    config = function(_, opts)
+      require("executioner").setup(opts)
+      require("telescope").load_extension("executioner")
+    end,
+  }
+<
+
+packer.nvim: >lua
+  use {
+    "sektant1/executioner.nvim",
+    requires = {
+      "nvim-telescope/telescope.nvim",
+      "nvim-lua/plenary.nvim",
+    },
+    config = function()
+      require("executioner").setup()
+      require("telescope").load_extension("executioner")
+    end,
+  }
+<
+
+==============================================================================
+4. USAGE                                                 *executioner-usage*
+
+Open the picker with the command or Lua API:
+>vim
+  :Executioner
+<
+>lua
+  require("executioner").run_scripts()
+<
+
+Select a script from the Telescope picker. If |always_prompt_args| is true
+(the default), you will be prompted for command-line arguments before
+execution. The script runs in a terminal buffer according to |terminal.type|.
+
+==============================================================================
+5. CONFIGURATION                                        *executioner-config*
+
+Call `setup()` with a table to override defaults. Unset keys keep their
+default values (deep-merged).
+
+>lua
+  require("executioner").setup({
+    scripts_dir = ".",
+    recursive = false,
+    max_depth = 3,
+    ignore = { "node_modules", ".git", ".venv", "target", "dist" },
+    include_executables = true,
+    always_prompt_args = true,
+
+    extensions = {
+      sh   = "bash",
+      bash = "bash",
+      zsh  = "zsh",
+      fish = "fish",
+      py   = "python3",
+      ps1  = "pwsh",
+      lua  = "nvim -l",
+      js   = "node",
+      ts   = "tsx",
+      rb   = "ruby",
+      pl   = "perl",
+      bat  = "cmd /c",
+      cmd  = "cmd /c",
+    },
+
+    terminal = {
+      type = "float",           -- "split" | "float" | "toggleterm"
+      split = {
+        direction = "belowright",
+        size = 15,
+        vertical = false,
+      },
+      float = {
+        width  = 0.8,
+        height = 0.8,
+        border = "rounded",
+        title  = " Executioner ",
+      },
+      auto_close   = false,
+      start_insert = true,
+    },
+
+    telescope = {
+      theme   = "dropdown",
+      preview = true,
+    },
+    keymaps = { run = false },
+    on_exit = nil,
+  })
+<
+
+                                              *executioner-config-scripts_dir*
+scripts_dir ~
+    `string` or `fun(): string`  (default: `"."`)
+    Directory to scan for scripts. `"."` resolves to `vim.fn.getcwd()`.
+    Accepts an absolute path, a relative path, or a function that returns
+    a path.
+
+                                              *executioner-config-recursive*
+recursive ~
+    `boolean`  (default: `false`)
+    When true, recurse into subdirectories up to |max_depth|.
+
+                                              *executioner-config-max_depth*
+max_depth ~
+    `integer`  (default: `3`)
+    Maximum recursion depth when |recursive| is `true`.
+
+                                                *executioner-config-ignore*
+ignore ~
+    `string[]`  (default: `{ "node_modules", ".git", ".venv", "target", "dist" }`)
+    Directory or file names to skip (exact match).
+
+                                            *executioner-config-extensions*
+extensions ~
+    `table<string, string>`
+    Map of file extension to interpreter command. Multi-word values
+    (e.g. `"nvim -l"`) are split into separate argv elements.
+
+                                    *executioner-config-include_executables*
+include_executables ~
+    `boolean`  (default: `true`)
+    Also include files with the executable bit set, regardless of
+    extension.
+
+                                    *executioner-config-always_prompt_args*
+always_prompt_args ~
+    `boolean`  (default: `true`)
+    Prompt for arguments via `vim.ui.input` before running a script.
+    Set to `false` to skip the prompt.
+
+                                        *executioner-config-terminal.type*
+terminal.type ~
+    `"split"` | `"float"` | `"toggleterm"`  (default: `"float"`)
+    How to display the running terminal.
+
+                                          *executioner-config-terminal.split*
+terminal.split ~
+    Table with keys: `direction` (string), `size` (integer), `vertical`
+    (boolean). Controls split terminal geometry.
+
+                                          *executioner-config-terminal.float*
+terminal.float ~
+    Table with keys: `width` (number), `height` (number), `border`
+    (string|table), `title` (string|function).
+    Fractional values (0–1) are relative to the editor size.
+
+                                     *executioner-config-terminal.auto_close*
+terminal.auto_close ~
+    `boolean`  (default: `false`)
+    Automatically close the terminal window on exit code 0.
+
+                                    *executioner-config-terminal.start_insert*
+terminal.start_insert ~
+    `boolean`  (default: `true`)
+    Enter insert mode when the terminal opens.
+
+                                              *executioner-config-telescope*
+telescope ~
+    `{ theme = string|table, preview = boolean }`
+    Telescope picker options. `theme` can be a name (`"dropdown"`,
+    `"ivy"`, `"cursor"`) or a raw options table.
+
+                                               *executioner-config-keymaps*
+keymaps ~
+    `{ run = string|false }`  (default: `{ run = false }`)
+    Set `run` to a keymap string (e.g. `"<leader>er"`) to create a
+    global normal-mode mapping. `false` disables automatic mapping.
+
+                                               *executioner-config-on_exit*
+on_exit ~
+    `fun(code: integer, script: string)` or `nil`
+    Optional callback invoked after the script process exits.
+
+==============================================================================
+6. COMMANDS                                           *executioner-commands*
+
+                                                            *:Executioner*
+:Executioner
+    Open the Executioner Telescope picker.
+
+==============================================================================
+7. HEALTH CHECK                                         *executioner-health*
+
+Run `:checkhealth executioner` to verify that dependencies are installed,
+the configured |scripts_dir| exists, and common interpreters are available
+on `$PATH`.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
