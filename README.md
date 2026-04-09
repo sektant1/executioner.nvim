@@ -2,9 +2,9 @@
 
 Telescope-powered script runner for Neovim 0.10+.
 
-Discover scripts in your project, pick one from a fuzzy finder, and run it in a terminal buffer.
+Fuzzy find scripts or binaries in your project, pick one, and run it in a terminal buffer.
 
-<!-- TODO: ![demo](assets/demo.gif) -->
+![demo](assets/demo.gif)
 
 ## Features
 
