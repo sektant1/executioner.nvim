@@ -21,7 +21,7 @@ Discover scripts in your project, pick one from a fuzzy finder, and run it in a 
 
 ## Requirements
 
-- Neovim >= 0.12
+- Neovim >= 0.10
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
 - [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
 
