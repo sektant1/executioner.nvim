@@ -45,33 +45,45 @@ M.defaults = {
 
 M.options = vim.deepcopy(M.defaults)
 
----Validate top-level user options.
----@param user table
-local function validate(user)
-  vim.validate({
-    scripts_dir = { user.scripts_dir, { "string", "function" }, true },
-    recursive = { user.recursive, "boolean", true },
-    max_depth = { user.max_depth, "number", true },
-    ignore = { user.ignore, "table", true },
-    extensions = { user.extensions, "table", true },
-    include_executables = { user.include_executables, "boolean", true },
-    always_prompt_args = { user.always_prompt_args, "boolean", true },
-    terminal = { user.terminal, "table", true },
-    telescope = { user.telescope, "table", true },
-    keymaps = { user.keymaps, "table", true },
-    on_exit = { user.on_exit, "function", true },
-  })
-  if user.terminal then
-    vim.validate({
-      ["terminal.type"] = { user.terminal.type, "string", true },
-      ["terminal.split"] = { user.terminal.split, "table", true },
-      ["terminal.float"] = { user.terminal.float, "table", true },
-      ["terminal.auto_close"] = { user.terminal.auto_close, "boolean", true },
-      ["terminal.start_insert"] = { user.terminal.start_insert, "boolean", true },
-    })
+---Validate a single field using the new or legacy vim.validate signature.
+local has_new_validate = vim.fn.has("nvim-0.11") == 1
+
+local function v(name, value, validator)
+  if value == nil then
+    return
+  end
+  if has_new_validate then
+    -- New signature: vim.validate(name, value, validator, optional_or_message)
+    vim.validate(name, value, validator, true)
+  else
+    -- Legacy signature: vim.validate({ [name] = { value, validator, optional } })
+    vim.validate({ [name] = { value, validator, true } })
   end
 end
 
+---Validate top-level user options.
+---@param user table
+local function validate(user)
+  v("scripts_dir", user.scripts_dir, { "string", "function" })
+  v("recursive", user.recursive, "boolean")
+  v("max_depth", user.max_depth, "number")
+  v("ignore", user.ignore, "table")
+  v("extensions", user.extensions, "table")
+  v("include_executables", user.include_executables, "boolean")
+  v("always_prompt_args", user.always_prompt_args, "boolean")
+  v("terminal", user.terminal, "table")
+  v("telescope", user.telescope, "table")
+  v("keymaps", user.keymaps, "table")
+  v("on_exit", user.on_exit, "function")
+
+  if user.terminal then
+    v("terminal.type", user.terminal.type, "string")
+    v("terminal.split", user.terminal.split, "table")
+    v("terminal.float", user.terminal.float, "table")
+    v("terminal.auto_close", user.terminal.auto_close, "boolean")
+    v("terminal.start_insert", user.terminal.start_insert, "boolean")
+  end
+end
 ---Merge user options into defaults (deep).
 ---@param user table|nil
 function M.setup(user)
