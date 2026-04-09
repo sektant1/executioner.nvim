@@ -1,10 +1,20 @@
+<div align="center">
+
+<img src="assets/logo.png" alt="executioner.nvim" width="200" />
+
 # executioner.nvim
 
-Telescope-powered script runner for Neovim 0.10+.
+Telescope-powered script runner for Neovim 0.10+
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Neovim](https://img.shields.io/badge/Neovim-0.10%2B-green.svg?logo=neovim)](https://neovim.io)
+[![LuaRocks](https://img.shields.io/luarocks/v/sektant1/executioner.nvim?logo=lua&color=purple)](https://luarocks.org/modules/sektant1/executioner.nvim)
 
 Fuzzy find scripts or binaries in your project, pick one, and run it in a terminal buffer.
 
 ![demo](assets/demo.gif)
+
+</div>
 
 ## Features
 
