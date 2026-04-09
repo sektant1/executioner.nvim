@@ -96,8 +96,8 @@ Defaults are shown below.
 
 ```lua
 require("executioner").setup({
-  scripts_dir = ".",              -- string or fun(): string
-  recursive = false,
+  scripts_dir = ".",              -- string or function(): string
+  recursive = true,
   max_depth = 3,
   ignore = { "node_modules", ".git", ".venv", "target", "dist" },
   include_executables = true,
@@ -120,7 +120,7 @@ require("executioner").setup({
   },
 
   terminal = {
-    type = "float",               -- "split" | "float" | "toggleterm"
+    type = "split",               -- "split" | "float" | "toggleterm"
     split = {
       direction = "belowright",
       size = 15,
@@ -141,7 +141,7 @@ require("executioner").setup({
     preview = true,
   },
   keymaps = { run = false },      -- set to e.g. "<leader>er" for a global mapping
-  on_exit = nil,                  -- fun(code, script_path)
+  on_exit = nil,                  -- function(code, script_path)
 })
 ```
 
