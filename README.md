@@ -67,6 +67,10 @@ use {
 }
 ```
 
+### rocks.nvim
+```vim
+:Rocks install executioner.nvim
+```
 
 ## Usage
 
