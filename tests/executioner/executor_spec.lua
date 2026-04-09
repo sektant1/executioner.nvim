@@ -51,4 +51,26 @@ describe("executor", function()
     assert.equals("-l", cmd[2])
     assert.equals(root .. "/thing.lua", cmd[3])
   end)
+
+  it("stores last run in _last", function()
+    local script = { path = root .. "/compile.py", ext = "py", name = "compile" }
+    -- Call build_cmd + set _last directly (run() would need a terminal)
+    executor._last = { script = script, raw_args = "--flag" }
+    assert.equals(script.path, executor._last.script.path)
+    assert.equals("--flag", executor._last.raw_args)
+  end)
+
+  it("rerun warns when no previous script", function()
+    executor._last = nil
+    local warned = false
+    local orig = vim.notify
+    vim.notify = function(msg)
+      if msg:match("No previous script") then
+        warned = true
+      end
+    end
+    executor.rerun()
+    vim.notify = orig
+    assert.is_true(warned)
+  end)
 end)
