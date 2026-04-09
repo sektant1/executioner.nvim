@@ -1,6 +1,7 @@
 local config = require 'executioner.config'
 local scanner = require 'executioner.scanner'
 local executor = require 'executioner.executor'
+local cache = require 'executioner.cache'
 local utils = require 'executioner.utils'
 
 local pickers = require 'telescope.pickers'
@@ -57,7 +58,11 @@ function M.run(opts)
 
           local script = selection.value
           if config.options.always_prompt_args then
-            vim.ui.input({ prompt = 'Arguments (optional): ' }, function(input)
+            local last_args = cache.get(script.path)
+            vim.ui.input({ prompt = 'Arguments (optional): ', default = last_args }, function(input)
+              if input then
+                cache.set(script.path, input)
+              end
               executor.run(script, input or '')
             end)
           else

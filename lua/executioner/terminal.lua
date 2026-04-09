@@ -25,6 +25,12 @@ local function start_term(buf, cmd, script)
       on_exit = on_exit_factory(script),
     })
   end)
+  vim.keymap.set('n', 'q', function()
+    local win = vim.fn.bufwinid(buf)
+    if win ~= -1 then
+      vim.api.nvim_win_close(win, true)
+    end
+  end, { buffer = buf, desc = 'Close Executioner terminal' })
   if config.options.terminal.start_insert then
     vim.cmd 'startinsert'
   end

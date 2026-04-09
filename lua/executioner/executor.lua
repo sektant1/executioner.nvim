@@ -4,6 +4,8 @@ local terminal = require 'executioner.terminal'
 
 local M = {}
 
+M._last = nil -- { script, raw_args }
+
 ---Build the command list to run the script.
 ---@param script { path: string, ext: string? }
 ---@param args string[]
@@ -38,6 +40,7 @@ function M.build_cmd(script, args)
 end
 
 function M.run(script, raw_args)
+  M._last = { script = script, raw_args = raw_args }
   local args = utils.split_args(raw_args)
   local cmd, err = M.build_cmd(script, args)
   if not cmd then
@@ -45,6 +48,14 @@ function M.run(script, raw_args)
     return
   end
   terminal.run(cmd, script)
+end
+
+function M.rerun()
+  if not M._last then
+    utils.warn 'No previous script to rerun'
+    return
+  end
+  M.run(M._last.script, M._last.raw_args)
 end
 
 return M

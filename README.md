@@ -12,13 +12,16 @@ Discover scripts in your project, pick one from a fuzzy finder, and run it in a 
 - **Auto-detection** by file extension or executable bit
 - **Shebang support** — executable files with shebangs run directly
 - **Argument prompt** via `vim.ui.input` before execution
+- **Args memory** — last-used arguments per script are remembered across sessions
+- **Quick rerun** — `:ExecutionerRerun` re-runs the last script without the picker
 - **Terminal modes** — floating window, split, or toggleterm
+- **Quick close** — press `q` in the terminal buffer to close it
 - **Configurable** — extensions map, ignore patterns, recursive scan, depth limit
 - **Lazy-loaded** — nothing runs until you open the picker
 
 ## Requirements
 
-- Neovim >= 0.10
+- Neovim >= 0.12
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
 - [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
 
@@ -78,6 +81,14 @@ require("executioner").run_scripts()
 ```
 
 Select a script, optionally enter arguments, and it runs in a terminal buffer.
+The args prompt is pre-filled with the last-used arguments for that script.
+Press `q` in the terminal buffer (normal mode) to close it.
+
+To re-run the last script without the picker:
+
+```vim
+:ExecutionerRerun
+```
 
 ## Configuration
 

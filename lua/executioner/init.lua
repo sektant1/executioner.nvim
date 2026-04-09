@@ -17,4 +17,8 @@ function M.run_scripts(opts)
   require('executioner.picker').run(opts)
 end
 
+function M.rerun()
+  require('executioner.executor').rerun()
+end
+
 return M

@@ -11,3 +11,7 @@ end
 vim.api.nvim_create_user_command('Executioner', function()
   require('executioner').run_scripts()
 end, { desc = 'Open Executioner script picker' })
+
+vim.api.nvim_create_user_command('ExecutionerRerun', function()
+  require('executioner').rerun()
+end, { desc = 'Re-run last Executioner script' })

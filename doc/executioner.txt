@@ -88,7 +88,21 @@ Open the picker with the command or Lua API:
 
 Select a script from the Telescope picker. If |always_prompt_args| is true
 (the default), you will be prompted for command-line arguments before
-execution. The script runs in a terminal buffer according to |terminal.type|.
+execution. The args prompt is pre-filled with the last-used arguments for
+that script (persisted across sessions via a JSON cache in
+`vim.fn.stdpath("state")`). The script runs in a terminal buffer according
+to |terminal.type|.
+
+In the terminal output buffer, press `q` in normal mode to close the
+window quickly.
+
+To re-run the last script without opening the picker:
+>vim
+  :ExecutionerRerun
+<
+>lua
+  require("executioner").rerun()
+<
 
 ==============================================================================
 5. CONFIGURATION                                        *executioner-config*
@@ -236,6 +250,11 @@ on_exit ~
                                                             *:Executioner*
 :Executioner
     Open the Executioner Telescope picker.
+
+                                                       *:ExecutionerRerun*
+:ExecutionerRerun
+    Re-run the last script with the same arguments, without opening the
+    picker. Shows a warning if no script has been run yet this session.
 
 ==============================================================================
 7. HEALTH CHECK                                         *executioner-health*
