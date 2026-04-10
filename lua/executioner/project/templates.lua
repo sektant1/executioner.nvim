@@ -1,6 +1,6 @@
 local M = {}
 
--- Helpers
+-- ── Helpers ─────────────────────────────────────────────────────────
 
 local type_map = {
   ["Executable"] = "exe",
@@ -76,7 +76,7 @@ local function prefix(name)
   return name:lower():gsub("[^%w]", "_")
 end
 
--- Source file content
+-- ── Source file content ────────────────────────────────────────────
 
 local function main_c(name)
   return [[#include <stdio.h>
@@ -221,7 +221,7 @@ inline int add(int a, int b) {
 ]]):format(g, g, ns, ns, g)
 end
 
--- Source file paths
+-- ── Source file paths ──────────────────────────────────────────────
 --
 -- Layout per project type:
 --   Executable           src/main.c|cpp
@@ -261,7 +261,7 @@ function M.source_files(opts)
   return files
 end
 
---  CMake
+-- ── CMake ───────────────────────────────────────────────────────────
 
 M.cmake = {}
 
@@ -378,7 +378,7 @@ target_link_libraries(%s PRIVATE %s)
     )
 end
 
---  Make
+-- ── Make ────────────────────────────────────────────────────────────
 
 M.make = {}
 
@@ -537,7 +537,7 @@ clean:
     )
 end
 
--- Meson
+-- ── Meson ───────────────────────────────────────────────────────────
 
 M.meson = {}
 
@@ -675,7 +675,7 @@ executable('%s', 'src/main.%s',
     )
 end
 
--- .gitignore
+-- ── .gitignore ──────────────────────────────────────────────────────
 
 function M.gitignore()
   return [[# Build artifacts
@@ -718,7 +718,26 @@ Thumbs.db
 ]]
 end
 
--- Main entry
+-- ── .clangd ─────────────────────────────────────────────────────────
+
+function M.clangd(opts)
+  local sys = system_map[opts.build_system] or opts.build_system
+  local db_dir = ""
+  if sys == "cmake" then
+    db_dir = opts._cmake_build_dir or "build"
+  elseif sys == "meson" then
+    db_dir = opts._meson_build_dir or "builddir"
+  end
+
+  if db_dir ~= "" then
+    return ("CompileFlags:\n  CompilationDatabase: %s\n"):format(db_dir)
+  end
+
+  -- Make: no compile_commands.json by default, just anchor the root
+  return "CompileFlags:\n  Add: [-Iinclude]\n"
+end
+
+-- ── Main entry ──────────────────────────────────────────────────────
 
 local system_map = {
   ["CMake"] = "cmake",
@@ -745,6 +764,9 @@ function M.generate(opts)
   for fname, content in pairs(M.source_files(opts)) do
     files[fname] = content
   end
+
+  -- .clangd (anchors clangd root + sets compile_commands path)
+  files[".clangd"] = M.clangd(opts)
 
   -- .gitignore
   if opts.gitignore then
