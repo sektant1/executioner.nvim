@@ -691,14 +691,6 @@ builddir/
 *.lib
 *.exe
 
-# CMake
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-compile_commands.json
-install_manifest.txt
-CTestTestfile.cmake
-
 # Meson
 meson-logs/
 meson-private/
