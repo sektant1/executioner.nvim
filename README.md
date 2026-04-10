@@ -19,14 +19,14 @@ Fuzzy find scripts or binaries in your project, pick one, and run it in a termin
 
 - **Telescope picker** with fuzzy search and file preview
 - **Auto-detection** by file extension or executable bit
-- **Shebang support** — executable files with shebangs run directly
+- **Shebang support** executable files with shebangs run directly
 - **Argument prompt** via `vim.ui.input` before execution
-- **Args memory** — last-used arguments per script are remembered across sessions
-- **Quick rerun** — `:ExecutionerRerun` re-runs the last script without the picker
-- **Terminal modes** — floating window, split, or toggleterm
-- **Quick close** — press `q` in the terminal buffer to close it
-- **Configurable** — extensions map, ignore patterns, recursive scan, depth limit
-- **Lazy-loaded** — nothing runs until you open the picker
+- **Args memory** last-used arguments per script are remembered across sessions
+- **Quick rerun** `:ExecutionerRerun` re-runs the last script without the picker
+- **Terminal modes** floating window, split, or toggleterm
+- **Quick close** press `q` in the terminal buffer to close it
+- **Configurable** extensions map, ignore patterns, recursive scan, depth limit
+- **Lazy-loaded** nothing runs until you open the picker
 
 ## Requirements
 
