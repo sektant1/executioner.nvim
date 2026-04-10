@@ -38,3 +38,7 @@ end, {
 vim.api.nvim_create_user_command("ExecutionerBuildLast", function()
   require("executioner").build_last()
 end, { desc = "Re-run last Executioner build target" })
+
+vim.api.nvim_create_user_command("CreateProject", function()
+  require("executioner").create_project()
+end, { desc = "Create a new C/C++ project (CMake/Make/Meson)" })

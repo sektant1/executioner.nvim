@@ -33,4 +33,8 @@ function M.build_last()
   require("executioner.build").build_last()
 end
 
+function M.create_project()
+  require("executioner.project").create()
+end
+
 return M

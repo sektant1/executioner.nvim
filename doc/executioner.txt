@@ -13,8 +13,9 @@ CONTENTS                                              *executioner-contents*
   4. Usage ................................. |executioner-usage|
   5. Configuration ......................... |executioner-config|
   6. Build systems ......................... |executioner-build|
-  7. Commands .............................. |executioner-commands|
-  8. Health check .......................... |executioner-health|
+  7. Project scaffolding ................... |executioner-project|
+  8. Commands .............................. |executioner-commands|
+  9. Health check .......................... |executioner-health|
 
 ==============================================================================
 1. INTRODUCTION                                   *executioner-introduction*
@@ -29,7 +30,8 @@ respected: an executable file with a shebang line is invoked directly;
 otherwise the interpreter is looked up from the configured extensions map.
 
 executioner.nvim also supports CMake, Make, and Meson build systems with
-dedicated commands for configuring and building targets.
+dedicated commands for configuring and building targets, and can scaffold
+new C/C++ projects via an interactive wizard.
 
 ==============================================================================
 2. REQUIREMENTS                                   *executioner-requirements*
@@ -42,6 +44,7 @@ Optional:
 - toggleterm.nvim https://github.com/akinsho/toggleterm.nvim
   (only needed when |terminal.type| is set to `"toggleterm"`)
 - cmake, make, meson, ninja — for build system integration
+- git — for |:CreateProject| git init
 
 ==============================================================================
 3. INSTALLATION                                   *executioner-installation*
@@ -51,10 +54,20 @@ lazy.nvim: >lua
     "sektant1/executioner.nvim",
     cmd = { "Executioner", "ExecutionerRerun",
             "ExecutionerConfigure", "ExecutionerBuild",
-            "ExecutionerBuildLast" },
+            "ExecutionerBuildLast", "CreateProject" },
     keys = {
       { "<leader>er", function() require("executioner").run_scripts() end,
         desc = "Executioner: run script" },
+      { "<leader>eR", function() require("executioner").rerun() end,
+        desc = "Executioner: rerun last script" },
+      { "<leader>ec", function() require("executioner").configure() end,
+        desc = "Executioner: configure project" },
+      { "<leader>eb", function() require("executioner").build() end,
+        desc = "Executioner: build target" },
+      { "<leader>eB", function() require("executioner").build_last() end,
+        desc = "Executioner: rerun last build" },
+      { "<leader>ep", function() require("executioner").create_project() end,
+        desc = "Executioner: create project" },
     },
     dependencies = {
       "nvim-telescope/telescope.nvim",
@@ -341,7 +354,97 @@ Lua API: >lua
 <
 
 ==============================================================================
-7. COMMANDS                                           *executioner-commands*
+7. PROJECT SCAFFOLDING                                *executioner-project*
+
+The |:CreateProject| command launches an interactive wizard that generates
+a new C or C++ project in the current working directory.
+
+                                              *executioner-project-wizard*
+Wizard steps ~
+
+  1. Project name          Free text (sanitised to `[%w_-]`)
+  2. Build system          CMake / Make / Meson
+  3. Language              C / C++
+  4. Project type          Executable / Static Library / Shared Library /
+                           Header-only Library / Library + Executable
+  5. Language standard     C: `c11` `c17` `c23`  —  C++: `c++17` `c++20` `c++23`
+  6. Add `.gitignore`      Yes / No
+  7. Initialize git        Yes / No
+
+After generation, the wizard offers to `cd` into the new project
+directory.
+
+                                         *executioner-project-file-layout*
+Generated file layout ~
+
+  Sources go in `src/`, public headers go in `include/`. The build file
+  sits at the project root.
+
+  Executable ~
+    Directories:  `src/`
+    Files:        build file, `src/main.c|cpp`
+
+  Static Library ~
+    Directories:  `src/`  `include/`
+    Files:        build file, `src/name.c|cpp`, `include/name.h|hpp`
+
+  Shared Library ~
+    Directories:  `src/`  `include/`
+    Files:        build file, `src/name.c|cpp`, `include/name.h|hpp`
+
+  Header-only Library ~
+    Directories:  `include/`
+    Files:        build file, `include/name.h|hpp`
+
+  Library + Executable ~
+    Directories:  `src/`  `include/`
+    Files:        build file, `src/name.c|cpp`, `src/main.c|cpp`,
+                  `include/name.h|hpp`
+
+  Example ("myapp", CMake, C++, Library + Executable): >
+    myapp/
+    ├── CMakeLists.txt
+    ├── include/
+    │   └── myapp.hpp
+    └── src/
+        ├── main.cpp
+        └── myapp.cpp
+<
+
+  For C header-only libraries, an stb-style single-header is generated
+  with a `PROJECTNAME_IMPLEMENTATION` guard. For C++, the header uses
+  `inline` functions.
+
+  The `.gitignore` template covers build artifacts (`*.o`, `*.a`, `*.so`,
+  `build/`, `builddir/`), CMake/Meson cache files, and common IDE/OS
+  junk files.
+
+                                        *executioner-project-build-files*
+Build file contents ~
+
+  CMake    `cmake_minimum_required`, `project()`, appropriate
+           `add_executable` / `add_library` / `target_link_libraries`
+           calls. Sources reference `src/`, include directories point
+           to `${CMAKE_CURRENT_SOURCE_DIR}/include`.
+           `CMAKE_EXPORT_COMPILE_COMMANDS ON` is set for clangd.
+
+  Make     Compiler variables (`CC`/`CXX`, `CFLAGS`/`CXXFLAGS`),
+           pattern rules, `all` and `clean` targets. Source paths
+           use `src/`. Library targets append `-Iinclude` to compiler
+           flags. Static libraries use `ar rcs`, shared libraries
+           add `-fPIC` and `-shared`.
+
+  Meson    `project()`, `executable()` / `static_library()` /
+           `shared_library()` / `declare_dependency()` as appropriate.
+           Sources reference `src/`, include directories use
+           `include_directories('include')`, with `warning_level=3`.
+
+Lua API: >lua
+  require("executioner").create_project()
+<
+
+==============================================================================
+8. COMMANDS                                           *executioner-commands*
 
                                                             *:Executioner*
 :Executioner
@@ -373,8 +476,16 @@ Lua API: >lua
     Re-run the last build target without opening the picker.
     Shows a warning if no target has been built yet this session.
 
+                                                       *:CreateProject*
+:CreateProject
+    Launch the interactive project scaffolding wizard. Creates a new
+    directory in `vim.fn.getcwd()` with the chosen build file, source
+    stubs in `src/`, headers in `include/`, and optional `.gitignore`.
+    Optionally initialises a git repository.
+    See |executioner-project| for full details.
+
 ==============================================================================
-8. HEALTH CHECK                                         *executioner-health*
+9. HEALTH CHECK                                         *executioner-health*
 
 Run `:checkhealth executioner` to verify that dependencies are installed,
 the configured |scripts_dir| exists, common interpreters are available on

@@ -11,6 +11,7 @@ Telescope-powered script runner & build system for Neovim 0.10+
 
 Fuzzy find scripts or binaries in your project, pick one, and run it in a terminal buffer.
 Configure, build, and pick targets from CMake, Make, and Meson projects.
+Generate new C/C++ projects with a single command.
 
 ![demo](assets/demo.gif)
 
@@ -25,6 +26,7 @@ Configure, build, and pick targets from CMake, Make, and Meson projects.
 - **Args memory** last-used arguments per script are remembered across sessions
 - **Quick rerun** `:ExecutionerRerun` re-runs the last script without the picker
 - **Build systems** configure, build, and pick targets from CMake, Make, and Meson
+- **Project generation** `:CreateProject` wizard generates build files, source stubs, and proper directory layout
 - **Terminal modes** floating window, split, or toggleterm
 - **Quick close** press `q` in the terminal buffer to close it
 - **Configurable** extensions map, ignore patterns, recursive scan, depth limit
@@ -39,8 +41,9 @@ Configure, build, and pick targets from CMake, Make, and Meson projects.
 Optional:
 - [toggleterm.nvim](https://github.com/akinsho/toggleterm.nvim) — only needed when `terminal.type = "toggleterm"`
 - `cmake`, `make`, `meson`, `ninja` — for build system integration
+- `git` — for `:CreateProject` git init
 
-## Installation
+## Installation examples
 
 ### lazy.nvim
 
@@ -48,14 +51,15 @@ Optional:
 {
   "sektant1/executioner.nvim",
   cmd = { "Executioner", "ExecutionerRerun",
-          "ExecutionerConfigure", "ExecutionerBuild", "ExecutionerBuildLast" },
+          "ExecutionerConfigure", "ExecutionerBuild",
+          "ExecutionerBuildLast", "CreateProject" },
   keys = {
-    -- you can change for whatever keybinds you want :)
     { "<leader>er", function() require("executioner").run_scripts() end, desc = "Executioner: run script" },
     { "<leader>eR", function() require("executioner").rerun() end, desc = "Executioner: rerun last script" },
     { "<leader>ec", function() require("executioner").configure() end, desc = "Executioner: configure project" },
     { "<leader>eb", function() require("executioner").build() end, desc = "Executioner: build target" },
     { "<leader>eB", function() require("executioner").build_last() end, desc = "Executioner: rerun last build" },
+    { "<leader>ep", function() require("executioner").create_project() end, desc = "Executioner: create project" },
   },
   dependencies = {
     "nvim-telescope/telescope.nvim",
@@ -151,6 +155,7 @@ You can also pass a target directly (with tab-completion):
 | `:ExecutionerConfigure` | `require("executioner").configure()` | Configure project |
 | `:ExecutionerBuild [target]` | `require("executioner").build(nil, target)` | Build target (picker or direct) |
 | `:ExecutionerBuildLast` | `require("executioner").build_last()` | Rerun last build |
+| `:CreateProject` | `require("executioner").create_project()` | Generate a new project |
 
 #### How targets are discovered
 
@@ -159,6 +164,64 @@ You can also pass a target directly (with tab-completion):
 | CMake | Parsed from `cmake --build <dir> --target help` |
 | Make | Parsed from `.PHONY` declarations and rule lines in the Makefile |
 | Meson | Parsed from `meson introspect --targets <dir>` (JSON) |
+
+### Project scaffolding
+
+Create a new C or C++ project with an interactive wizard:
+
+```vim
+:CreateProject
+```
+
+Or from Lua:
+
+```lua
+require("executioner").create_project()
+```
+
+The wizard walks you through these steps:
+
+| Step | Options |
+|---|---|
+| Project name | Free text input |
+| Build system | CMake / Make / Meson |
+| Language | C / C++ |
+| Project type | Executable, Static Library, Shared Library, Header-only Library, Library + Executable |
+| Standard | C: `c11` `c17` `c23` — C++: `c++17` `c++20` `c++23` |
+| .gitignore | Yes / No |
+| Git init | Yes / No |
+
+A directory with the project name is created in the current working directory
+containing the build file, source stubs, and proper `src/` / `include/`
+directories where appropriate.
+
+#### What gets generated
+
+| Project type | Directories | Files |
+|---|---|---|
+| Executable | `src/` | build file + `src/main.c\|cpp` |
+| Static Library | `src/` `include/` | build file + `src/name.c\|cpp` + `include/name.h\|hpp` |
+| Shared Library | `src/` `include/` | build file + `src/name.c\|cpp` + `include/name.h\|hpp` |
+| Header-only Library | `include/` | build file + `include/name.h\|hpp` |
+| Library + Executable | `src/` `include/` | build file + `src/name.c\|cpp` + `src/main.c\|cpp` + `include/name.h\|hpp` |
+
+For example, `:CreateProject` with name `myapp`, CMake, C++, Library + Executable produces:
+
+```
+myapp/
+├── CMakeLists.txt
+├── include/
+│   └── myapp.hpp
+└── src/
+    ├── main.cpp
+    └── myapp.cpp
+```
+
+Build files reference the correct paths — CMake uses
+`${CMAKE_CURRENT_SOURCE_DIR}/include`, Make appends `-Iinclude` to compiler
+flags, and Meson uses `include_directories('include')`.
+
+After creation, executioner offers to `cd` into the new project directory.
 
 ## Configuration
 
@@ -350,6 +413,12 @@ A: executioner looks for `CMakeLists.txt`, `meson.build`, or `Makefile` (also `m
 
 **Q: Do I need to run `:ExecutionerConfigure` before `:ExecutionerBuild`?**
 A: For CMake and Meson, yes — the project must be configured first so the build directory exists. For Make, there is no configure step.
+
+**Q: What does `:CreateProject` generate for a header-only library?**
+A: For C++ it generates a header with `inline` functions in `include/`. For C it generates an stb-style single-header with an `IMPLEMENTATION` guard in `include/` — define `PROJECTNAME_IMPLEMENTATION` in exactly one `.c` file before including.
+
+**Q: What directory layout does `:CreateProject` use?**
+A: Sources go in `src/`, public headers go in `include/`. Executables get only `src/`, header-only libraries get only `include/`, and all other library types get both. The build file sits at the project root.
 
 ## Contributing
 
