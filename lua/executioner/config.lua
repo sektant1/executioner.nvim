@@ -25,6 +25,23 @@ M.defaults = {
     cmd = "cmd /c",
   },
 
+  build = {
+    cmake = {
+      build_dir = "build",
+      generator = nil,
+      configure_args = {},
+      build_args = {},
+    },
+    make = {
+      args = {},
+    },
+    meson = {
+      build_dir = "builddir",
+      setup_args = {},
+      compile_args = {},
+    },
+  },
+
   terminal = {
     type = "split", -- "split" | "float" | "toggleterm"
     split = { direction = "belowright", size = 15, vertical = false },
@@ -53,10 +70,8 @@ local function v(name, value, validator)
     return
   end
   if has_new_validate then
-    -- New signature: vim.validate(name, value, validator, optional_or_message)
     vim.validate(name, value, validator, true)
   else
-    -- Legacy signature: vim.validate({ [name] = { value, validator, optional } })
     vim.validate({ [name] = { value, validator, true } })
   end
 end
@@ -75,6 +90,7 @@ local function validate(user)
   v("telescope", user.telescope, "table")
   v("keymaps", user.keymaps, "table")
   v("on_exit", user.on_exit, "function")
+  v("build", user.build, "table")
 
   if user.terminal then
     v("terminal.type", user.terminal.type, "string")
@@ -83,7 +99,14 @@ local function validate(user)
     v("terminal.auto_close", user.terminal.auto_close, "boolean")
     v("terminal.start_insert", user.terminal.start_insert, "boolean")
   end
+
+  if user.build then
+    v("build.cmake", user.build.cmake, "table")
+    v("build.make", user.build.make, "table")
+    v("build.meson", user.build.meson, "table")
+  end
 end
+
 ---Merge user options into defaults (deep).
 ---@param user table|nil
 function M.setup(user)

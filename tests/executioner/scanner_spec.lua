@@ -64,7 +64,11 @@ describe("scanner", function()
 
   it("returns empty on missing dir without crashing", function()
     helpers.reset_config({ scripts_dir = "/nonexistent/path/xyz" })
-    assert.same({}, require("executioner.scanner").scan())
+    local orig = vim.notify
+    vim.notify = function() end
+    local result = require("executioner.scanner").scan()
+    vim.notify = orig
+    assert.same({}, result)
   end)
 
   it("sorts results alphabetically", function()

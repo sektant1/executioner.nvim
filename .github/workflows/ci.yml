@@ -79,3 +79,10 @@ jobs:
           nvim --headless -u tests/minimal_init.lua \
             -c "lua require('executioner').setup({})" \
             -c "qa"
+      - name: Load build module
+        run: |
+          nvim --headless -u tests/minimal_init.lua \
+            -c "lua require('executioner').setup({})" \
+            -c "lua require('executioner.build')" \
+            -c "lua require('executioner.build.detect')" \
+            -c "qa"

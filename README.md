@@ -3,13 +3,14 @@
 <img src="assets/logo.png" alt="executioner.nvim" width="600" />
 
 
-Telescope-powered script runner for Neovim 0.10+
+Telescope-powered script runner & build system for Neovim 0.10+
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Neovim](https://img.shields.io/badge/Neovim-0.10%2B-green.svg?logo=neovim)](https://neovim.io)
 [![LuaRocks](https://img.shields.io/luarocks/v/sektant1/executioner.nvim?logo=lua&color=purple)](https://luarocks.org/modules/sektant1/executioner.nvim)
 
 Fuzzy find scripts or binaries in your project, pick one, and run it in a terminal buffer.
+Configure, build, and pick targets from CMake, Make, and Meson projects.
 
 ![demo](assets/demo.gif)
 
@@ -23,6 +24,7 @@ Fuzzy find scripts or binaries in your project, pick one, and run it in a termin
 - **Argument prompt** via `vim.ui.input` before execution
 - **Args memory** last-used arguments per script are remembered across sessions
 - **Quick rerun** `:ExecutionerRerun` re-runs the last script without the picker
+- **Build systems** configure, build, and pick targets from CMake, Make, and Meson
 - **Terminal modes** floating window, split, or toggleterm
 - **Quick close** press `q` in the terminal buffer to close it
 - **Configurable** extensions map, ignore patterns, recursive scan, depth limit
@@ -36,6 +38,7 @@ Fuzzy find scripts or binaries in your project, pick one, and run it in a termin
 
 Optional:
 - [toggleterm.nvim](https://github.com/akinsho/toggleterm.nvim) — only needed when `terminal.type = "toggleterm"`
+- `cmake`, `make`, `meson`, `ninja` — for build system integration
 
 ## Installation
 
@@ -44,9 +47,15 @@ Optional:
 ```lua
 {
   "sektant1/executioner.nvim",
-  cmd = { "Executioner", "ExecutionerRerun" },
+  cmd = { "Executioner", "ExecutionerRerun",
+          "ExecutionerConfigure", "ExecutionerBuild", "ExecutionerBuildLast" },
   keys = {
+    -- you can change for whatever keybinds you want :)
     { "<leader>er", function() require("executioner").run_scripts() end, desc = "Executioner: run script" },
+    { "<leader>eR", function() require("executioner").rerun() end, desc = "Executioner: rerun last script" },
+    { "<leader>ec", function() require("executioner").configure() end, desc = "Executioner: configure project" },
+    { "<leader>eb", function() require("executioner").build() end, desc = "Executioner: build target" },
+    { "<leader>eB", function() require("executioner").build_last() end, desc = "Executioner: rerun last build" },
   },
   dependencies = {
     "nvim-telescope/telescope.nvim",
@@ -83,6 +92,8 @@ use {
 
 ## Usage
 
+### Running scripts
+
 ```vim
 :Executioner
 ```
@@ -102,6 +113,52 @@ To re-run the last script without the picker:
 ```vim
 :ExecutionerRerun
 ```
+
+### Build systems
+
+executioner.nvim auto-detects CMake, Make, and Meson projects by looking for
+`CMakeLists.txt`, `Makefile` (or `makefile`, `GNUmakefile`), and `meson.build`
+in the current working directory.
+
+**Configure** (CMake / Meson):
+
+```vim
+:ExecutionerConfigure
+```
+
+**Build a target** (opens a Telescope picker with discovered targets):
+
+```vim
+:ExecutionerBuild
+```
+
+You can also pass a target directly (with tab-completion):
+
+```vim
+:ExecutionerBuild myapp
+```
+
+**Re-run the last build:**
+
+```vim
+:ExecutionerBuildLast
+```
+
+| Command | Lua API | Description |
+|---|---|---|
+| `:Executioner` | `require("executioner").run_scripts()` | Pick and run a script |
+| `:ExecutionerRerun` | `require("executioner").rerun()` | Rerun last script |
+| `:ExecutionerConfigure` | `require("executioner").configure()` | Configure project |
+| `:ExecutionerBuild [target]` | `require("executioner").build(nil, target)` | Build target (picker or direct) |
+| `:ExecutionerBuildLast` | `require("executioner").build_last()` | Rerun last build |
+
+#### How targets are discovered
+
+| Build system | Method |
+|---|---|
+| CMake | Parsed from `cmake --build <dir> --target help` |
+| Make | Parsed from `.PHONY` declarations and rule lines in the Makefile |
+| Meson | Parsed from `meson introspect --targets <dir>` (JSON) |
 
 ## Configuration
 
@@ -130,6 +187,23 @@ require("executioner").setup({
     pl   = "perl",
     bat  = "cmd /c",
     cmd  = "cmd /c",
+  },
+
+  build = {
+    cmake = {
+      build_dir      = "build",       -- relative to cwd or absolute
+      generator      = nil,           -- e.g. "Ninja" (nil = cmake default)
+      configure_args = {},            -- extra args for cmake -B … -S …
+      build_args     = {},            -- extra args for cmake --build …
+    },
+    make = {
+      args = {},                      -- extra args passed before the target
+    },
+    meson = {
+      build_dir    = "builddir",      -- relative to cwd or absolute
+      setup_args   = {},              -- extra args for meson setup
+      compile_args = {},              -- extra args for meson compile
+    },
   },
 
   terminal = {
@@ -211,13 +285,51 @@ require("executioner").setup({
 })
 ```
 
+### CMake with Ninja and Release mode
+
+```lua
+require("executioner").setup({
+  build = {
+    cmake = {
+      generator = "Ninja",
+      configure_args = { "-DCMAKE_BUILD_TYPE=Release" },
+      build_args = { "-j8" },
+    },
+  },
+})
+```
+
+### Make with parallel jobs
+
+```lua
+require("executioner").setup({
+  build = {
+    make = { args = { "-j$(nproc)" } },
+  },
+})
+```
+
+### Meson with custom build type
+
+```lua
+require("executioner").setup({
+  build = {
+    meson = {
+      setup_args = { "--buildtype=release" },
+    },
+  },
+})
+```
+
 ## Health Check
 
 ```vim
 :checkhealth executioner
 ```
 
-Verifies dependencies (telescope, plenary, toggleterm), Neovim version, `scripts_dir` existence, and common interpreter availability.
+Verifies dependencies (telescope, plenary, toggleterm), Neovim version,
+`scripts_dir` existence, common interpreter availability, and build tool
+detection (cmake, make, meson, ninja).
 
 ## FAQ
 
@@ -232,6 +344,12 @@ A: The `bat` and `cmd` extensions map to `cmd /c`. Path handling uses `vim.fn.fn
 
 **Q: How do I add support for a new language?**
 A: Add the extension to the `extensions` table: `extensions = { go = "go run" }`.
+
+**Q: How does build system detection work?**
+A: executioner looks for `CMakeLists.txt`, `meson.build`, or `Makefile` (also `makefile` and `GNUmakefile`) in the current working directory. Priority is CMake > Meson > Make.
+
+**Q: Do I need to run `:ExecutionerConfigure` before `:ExecutionerBuild`?**
+A: For CMake and Meson, yes — the project must be configured first so the build directory exists. For Make, there is no configure step.
 
 ## Contributing
 

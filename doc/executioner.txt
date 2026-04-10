@@ -12,8 +12,9 @@ CONTENTS                                              *executioner-contents*
   3. Installation .......................... |executioner-installation|
   4. Usage ................................. |executioner-usage|
   5. Configuration ......................... |executioner-config|
-  6. Commands .............................. |executioner-commands|
-  7. Health check .......................... |executioner-health|
+  6. Build systems ......................... |executioner-build|
+  7. Commands .............................. |executioner-commands|
+  8. Health check .......................... |executioner-health|
 
 ==============================================================================
 1. INTRODUCTION                                   *executioner-introduction*
@@ -27,6 +28,9 @@ Scripts are detected by file extension or the executable bit. Shebangs are
 respected: an executable file with a shebang line is invoked directly;
 otherwise the interpreter is looked up from the configured extensions map.
 
+executioner.nvim also supports CMake, Make, and Meson build systems with
+dedicated commands for configuring and building targets.
+
 ==============================================================================
 2. REQUIREMENTS                                   *executioner-requirements*
 
@@ -37,6 +41,7 @@ otherwise the interpreter is looked up from the configured extensions map.
 Optional:
 - toggleterm.nvim https://github.com/akinsho/toggleterm.nvim
   (only needed when |terminal.type| is set to `"toggleterm"`)
+- cmake, make, meson, ninja — for build system integration
 
 ==============================================================================
 3. INSTALLATION                                   *executioner-installation*
@@ -44,7 +49,9 @@ Optional:
 lazy.nvim: >lua
   {
     "sektant1/executioner.nvim",
-    cmd = { "Executioner", "ExecutionerRerun" },
+    cmd = { "Executioner", "ExecutionerRerun",
+            "ExecutionerConfigure", "ExecutionerBuild",
+            "ExecutionerBuildLast" },
     keys = {
       { "<leader>er", function() require("executioner").run_scripts() end,
         desc = "Executioner: run script" },
@@ -133,6 +140,23 @@ default values (deep-merged).
       pl   = "perl",
       bat  = "cmd /c",
       cmd  = "cmd /c",
+    },
+
+    build = {
+      cmake = {
+        build_dir      = "build",
+        generator      = nil,
+        configure_args = {},
+        build_args     = {},
+      },
+      make = {
+        args = {},
+      },
+      meson = {
+        build_dir    = "builddir",
+        setup_args   = {},
+        compile_args = {},
+      },
     },
 
     terminal = {
@@ -246,8 +270,78 @@ on_exit ~
     Runs inside `vim.schedule`, so it is safe to call `vim.api.*`
     and other API functions from this callback.
 
+                                                *executioner-config-build*
+build ~
+    Table controlling build system integration. See |executioner-build|.
+
+                                          *executioner-config-build.cmake*
+build.cmake ~
+    `build_dir`      `string`   (default: `"build"`)
+        Directory for the CMake build tree. Relative paths resolve
+        from `vim.fn.getcwd()`.
+    `generator`      `string|nil` (default: `nil`)
+        CMake generator (e.g. `"Ninja"`). `nil` uses the CMake default.
+    `configure_args` `string[]` (default: `{}`)
+        Extra arguments passed to `cmake -B … -S …`.
+    `build_args`     `string[]` (default: `{}`)
+        Extra arguments passed to `cmake --build …`.
+
+                                           *executioner-config-build.make*
+build.make ~
+    `args`  `string[]`  (default: `{}`)
+        Extra arguments passed to `make` before the target name.
+
+                                          *executioner-config-build.meson*
+build.meson ~
+    `build_dir`    `string`   (default: `"builddir"`)
+        Directory for the Meson build tree.
+    `setup_args`   `string[]` (default: `{}`)
+        Extra arguments for `meson setup`.
+    `compile_args` `string[]` (default: `{}`)
+        Extra arguments for `meson compile`.
+
 ==============================================================================
-6. COMMANDS                                           *executioner-commands*
+6. BUILD SYSTEMS                                        *executioner-build*
+
+executioner.nvim can configure, build, and pick targets from CMake, Make,
+and Meson projects. Detection is automatic based on files in the current
+working directory (priority: CMake > Meson > Make).
+
+Workflow (CMake / Meson): >vim
+  :ExecutionerConfigure          " generate the build tree
+  :ExecutionerBuild              " pick a target from Telescope
+  :ExecutionerBuild myapp        " build a specific target directly
+  :ExecutionerBuildLast          " re-run the last build
+<
+
+Workflow (Make): >vim
+  :ExecutionerBuild              " pick a target from Telescope
+  :ExecutionerBuild test         " build a specific target directly
+  :ExecutionerBuildLast          " re-run the last build
+<
+
+Make does not have a configure step; |:ExecutionerConfigure| will inform
+you accordingly.
+
+Target discovery:
+  CMake  — parsed from `cmake --build <dir> --target help`
+  Make   — parsed from `.PHONY` declarations and rule lines in the
+           Makefile (or makefile, GNUmakefile)
+  Meson  — parsed from `meson introspect --targets <dir>` (JSON)
+
+All build commands run in the same terminal mode configured via
+|executioner-config-terminal.type|. The `on_exit` callback fires for
+build commands the same way it does for scripts.
+
+Lua API: >lua
+  require("executioner").configure()             -- configure
+  require("executioner").build()                 -- pick target
+  require("executioner").build(nil, "myapp")     -- direct target
+  require("executioner").build_last()            -- rerun
+<
+
+==============================================================================
+7. COMMANDS                                           *executioner-commands*
 
                                                             *:Executioner*
 :Executioner
@@ -258,12 +352,33 @@ on_exit ~
     Re-run the last script with the same arguments, without opening the
     picker. Shows a warning if no script has been run yet this session.
 
+                                                   *:ExecutionerConfigure*
+:ExecutionerConfigure
+    Run the configure step for the detected build system.
+    CMake: `cmake -B <build_dir> -S <project_root>`
+    Meson: `meson setup <build_dir> <project_root>`
+    Make:  no configure step (informational message).
+
+                                                      *:ExecutionerBuild*
+:ExecutionerBuild [{target}]
+    Build the project using the detected build system. Without an
+    argument, opens a Telescope picker listing available targets.
+    With a {target} argument, builds that target directly.
+    Tab-completion is provided for known targets.
+
+    Warns if a CMake or Meson project has not been configured yet.
+
+                                                  *:ExecutionerBuildLast*
+:ExecutionerBuildLast
+    Re-run the last build target without opening the picker.
+    Shows a warning if no target has been built yet this session.
+
 ==============================================================================
-7. HEALTH CHECK                                         *executioner-health*
+8. HEALTH CHECK                                         *executioner-health*
 
 Run `:checkhealth executioner` to verify that dependencies are installed,
-the configured |scripts_dir| exists, and common interpreters are available
-on `$PATH`.
+the configured |scripts_dir| exists, common interpreters are available on
+`$PATH`, and build tools (cmake, make, meson, ninja) are detected.
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:

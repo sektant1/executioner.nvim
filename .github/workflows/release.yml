@@ -43,14 +43,20 @@ jobs:
           LUAROCKS_API_KEY: ${{ secrets.LUAROCKS_API_KEY }}
         with:
           name: executioner.nvim
-          summary: "Telescope-powered script runner for Neovim"
+          summary: "Telescope-powered script runner and build system for Neovim"
           detailed_description: |
             Discover scripts in your project, pick one from a Telescope picker,
-            and run it in a terminal buffer.
+            and run it in a terminal buffer. Configure, build, and pick targets
+            from CMake, Make, and Meson projects with dedicated commands and
+            Telescope integration.
           labels: |
             neovim
             telescope
             script-runner
+            cmake
+            make
+            meson
+            build-system
           dependencies: |
             plenary.nvim
             telescope.nvim

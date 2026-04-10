@@ -1,5 +1,5 @@
-local config = require 'executioner.config'
-local utils = require 'executioner.utils'
+local config = require("executioner.config")
+local utils = require("executioner.utils")
 
 local M = {}
 
@@ -13,7 +13,7 @@ local function is_ignored(name, ignore)
 end
 
 local function has_known_ext(name, exts)
-  local ext = name:match '%.([^.]+)$'
+  local ext = name:match("%.([^.]+)$")
   return ext and exts[ext:lower()] ~= nil
 end
 
@@ -23,7 +23,7 @@ function M.scan()
   local root = config.resolved_scripts_dir()
 
   if vim.fn.isdirectory(root) == 0 then
-    utils.err('scripts_dir does not exist: ' .. root)
+    utils.err("scripts_dir does not exist: " .. root)
     return {}
   end
 
@@ -36,9 +36,9 @@ function M.scan()
   }
 
   for name, type_ in vim.fs.dir(root, dir_opts) do
-    if type_ == 'file' and not is_ignored(vim.fs.basename(name), opts.ignore) then
+    if type_ == "file" and not is_ignored(vim.fs.basename(name), opts.ignore) then
       local full = vim.fs.joinpath(root, name)
-      local ext = name:match '%.([^.]+)$'
+      local ext = name:match("%.([^.]+)$")
       local known = has_known_ext(name, opts.extensions)
       local exec = opts.include_executables and utils.is_executable(full)
       if known or exec then
