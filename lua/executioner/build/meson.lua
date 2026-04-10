@@ -2,9 +2,8 @@ local config = require("executioner.config")
 
 local M = {}
 
-local function project_root()
-  return vim.fn.getcwd()
-end
+--- Set by build/init.lua before calling any backend method.
+M.project_root = nil
 
 ---@return string
 function M.build_dir()
@@ -12,7 +11,7 @@ function M.build_dir()
   if dir:match("^/") or dir:match("^%a:[/\\]") then
     return dir
   end
-  return project_root() .. "/" .. dir
+  return M.project_root .. "/" .. dir
 end
 
 ---@return boolean
@@ -24,7 +23,7 @@ end
 ---@return string[]
 function M.configure_cmd()
   local opts = config.options.build.meson
-  local cmd = { "meson", "setup", M.build_dir(), project_root() }
+  local cmd = { "meson", "setup", M.build_dir(), M.project_root }
   vim.list_extend(cmd, opts.setup_args)
   return cmd
 end

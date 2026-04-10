@@ -108,7 +108,9 @@ describe("build", function()
 
     assert.is_not_nil(captured_cmd)
     assert.equals("make", captured_cmd[1])
-    assert.equals("test", captured_cmd[2])
+    assert.equals("-C", captured_cmd[2])
+    assert.equals(root, captured_cmd[3])
+    assert.equals("test", captured_cmd[4])
   end)
 
   it("build_last replays last target", function()
@@ -135,7 +137,9 @@ describe("build", function()
     build.build_last()
     assert.equals(2, #captured_cmds)
     assert.equals("make", captured_cmds[2][1])
-    assert.equals("all", captured_cmds[2][2])
+    assert.equals("-C", captured_cmds[2][2])
+    assert.equals(root, captured_cmds[2][3])
+    assert.equals("all", captured_cmds[2][4])
 
     term.run = orig_run
     vim.cmd("cd " .. orig_cwd)

@@ -42,31 +42,33 @@ local function normalize_targets(raw)
   return out
 end
 
----@return string|nil system, table|nil backend
+---@return string|nil system, table|nil backend, string|nil root
 local function detect_system()
-  local system = detect.detect(vim.fn.getcwd())
+  local system, root = detect.detect(vim.fn.getcwd())
   if not system then
     utils.warn("No build system detected (looked for CMakeLists.txt, Makefile, meson.build)")
-    return nil, nil
+    return nil, nil, nil
   end
   local backend = get_backend(system)
   if not backend then
     utils.err("No backend for build system: " .. system)
-    return nil, nil
+    return nil, nil, nil
   end
-  return system, backend
+  backend.project_root = root
+  return system, backend, root
 end
 
 ---@param label string
+---@param root string
 ---@return table
-local function make_script(label)
-  return { name = label, path = vim.fn.getcwd() }
+local function make_script(label, root)
+  return { name = label, path = root, cwd = root }
 end
 
 -- Public API
 
 function M.configure()
-  local system, backend = detect_system()
+  local system, backend, root = detect_system()
   if not system then
     return
   end
@@ -76,13 +78,13 @@ function M.configure()
   end
   local cmd = backend.configure_cmd()
   utils.notify("Configuring with " .. system .. "…")
-  terminal.run(cmd, make_script(system .. " configure"))
+  terminal.run(cmd, make_script(system .. " configure", root))
 end
 
 ---@param opts table|nil Telescope picker overrides
 ---@param target string|nil build this target directly (skip picker)
 function M.build(opts, target)
-  local system, backend = detect_system()
+  local system, backend, root = detect_system()
   if not system then
     return
   end
@@ -93,9 +95,9 @@ function M.build(opts, target)
   end
 
   if target and target ~= "" then
-    M._last = { system = system, target = target }
+    M._last = { system = system, target = target, root = root }
     local cmd = backend.build_cmd(target)
-    terminal.run(cmd, make_script(system .. " build: " .. target))
+    terminal.run(cmd, make_script(system .. " build: " .. target, root))
     return
   end
 
@@ -104,13 +106,13 @@ function M.build(opts, target)
 
   -- No targets found -> run default build
   if #targets == 0 then
-    M._last = { system = system, target = nil }
+    M._last = { system = system, target = nil, root = root }
     local cmd = backend.build_cmd(nil)
-    terminal.run(cmd, make_script(system .. " build"))
+    terminal.run(cmd, make_script(system .. " build", root))
     return
   end
 
-  M._pick_target(system, backend, targets, opts)
+  M._pick_target(system, backend, targets, opts, root)
 end
 
 function M.build_last()
@@ -123,17 +125,18 @@ function M.build_last()
     utils.err("Build system " .. M._last.system .. " backend unavailable")
     return
   end
+  backend.project_root = M._last.root
   local label = M._last.system .. " build"
   if M._last.target then
     label = label .. ": " .. M._last.target
   end
   local cmd = backend.build_cmd(M._last.target)
-  terminal.run(cmd, make_script(label))
+  terminal.run(cmd, make_script(label, M._last.root))
 end
 
 ---@return string[]
 function M.complete_targets()
-  local system = detect.detect(vim.fn.getcwd())
+  local system, root = detect.detect(vim.fn.getcwd())
   if not system then
     return {}
   end
@@ -141,6 +144,7 @@ function M.complete_targets()
   if not backend then
     return {}
   end
+  backend.project_root = root
   if backend.is_configured and not backend.is_configured() then
     return {}
   end
@@ -151,7 +155,7 @@ function M.complete_targets()
   end, targets)
 end
 
-function M._pick_target(system, backend, targets, opts)
+function M._pick_target(system, backend, targets, opts, root)
   local has_telescope, _ = pcall(require, "telescope")
   if not has_telescope then
     utils.err("telescope.nvim is required for the target picker")
@@ -199,9 +203,9 @@ function M._pick_target(system, backend, targets, opts)
             return
           end
           local selected = selection.value
-          M._last = { system = system, target = selected }
+          M._last = { system = system, target = selected, root = root }
           local cmd = backend.build_cmd(selected)
-          terminal.run(cmd, make_script(system .. " build: " .. selected))
+          terminal.run(cmd, make_script(system .. " build: " .. selected, root))
         end)
         return true
       end,

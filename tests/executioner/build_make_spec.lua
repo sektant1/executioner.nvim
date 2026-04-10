@@ -13,22 +13,25 @@ describe("build.make", function()
   it("build_cmd without target", function()
     helpers.reset_config({ build = { make = { args = {} } } })
     make = require("executioner.build.make")
+    make.project_root = "/tmp/project"
     local cmd = make.build_cmd(nil)
-    assert.same({ "make" }, cmd)
+    assert.same({ "make", "-C", "/tmp/project" }, cmd)
   end)
 
   it("build_cmd with target", function()
     helpers.reset_config({ build = { make = { args = {} } } })
     make = require("executioner.build.make")
+    make.project_root = "/tmp/project"
     local cmd = make.build_cmd("test")
-    assert.same({ "make", "test" }, cmd)
+    assert.same({ "make", "-C", "/tmp/project", "test" }, cmd)
   end)
 
   it("build_cmd includes extra args before target", function()
     helpers.reset_config({ build = { make = { args = { "-j4" } } } })
     make = require("executioner.build.make")
+    make.project_root = "/tmp/project"
     local cmd = make.build_cmd("all")
-    assert.same({ "make", "-j4", "all" }, cmd)
+    assert.same({ "make", "-C", "/tmp/project", "-j4", "all" }, cmd)
   end)
 
   it("parses simple targets from Makefile", function()
@@ -50,13 +53,10 @@ describe("build.make", function()
         "\trm -rf build",
       }, "\n")
     )
-    -- Chdir so the module finds the Makefile
-    local orig_cwd = vim.fn.getcwd()
-    vim.cmd("cd " .. root)
     helpers.reset_config({ build = { make = { args = {} } } })
     make = require("executioner.build.make")
+    make.project_root = root
     local targets = make.targets()
-    vim.cmd("cd " .. orig_cwd)
 
     assert.is_true(vim.tbl_contains(targets, "test"))
     assert.is_true(vim.tbl_contains(targets, "lint"))
@@ -66,24 +66,20 @@ describe("build.make", function()
 
   it("skips variable assignments that look like targets", function()
     helpers.write(root .. "/Makefile", "CC := gcc\nall:\n\techo hi\n")
-    local orig_cwd = vim.fn.getcwd()
-    vim.cmd("cd " .. root)
     helpers.reset_config({ build = { make = { args = {} } } })
     make = require("executioner.build.make")
+    make.project_root = root
     local targets = make.targets()
-    vim.cmd("cd " .. orig_cwd)
 
     assert.is_false(vim.tbl_contains(targets, "CC"))
     assert.is_true(vim.tbl_contains(targets, "all"))
   end)
 
   it("returns empty when no Makefile", function()
-    local orig_cwd = vim.fn.getcwd()
-    vim.cmd("cd " .. root)
     helpers.reset_config({ build = { make = { args = {} } } })
     make = require("executioner.build.make")
+    make.project_root = root
     local targets = make.targets()
-    vim.cmd("cd " .. orig_cwd)
     assert.same({}, targets)
   end)
 
@@ -97,12 +93,10 @@ describe("build.make", function()
         "\techo test",
       }, "\n")
     )
-    local orig_cwd = vim.fn.getcwd()
-    vim.cmd("cd " .. root)
     helpers.reset_config({ build = { make = { args = {} } } })
     make = require("executioner.build.make")
+    make.project_root = root
     local targets = make.targets()
-    vim.cmd("cd " .. orig_cwd)
 
     local count = 0
     for _, t in ipairs(targets) do

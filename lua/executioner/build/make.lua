@@ -3,10 +3,13 @@ local detect = require("executioner.build.detect")
 
 local M = {}
 
+--- Set by build/init.lua before calling any backend method.
+M.project_root = nil
+
 ---@return string[]
 function M.build_cmd(target)
   local opts = config.options.build.make
-  local cmd = { "make" }
+  local cmd = { "make", "-C", M.project_root }
   vim.list_extend(cmd, opts.args)
   if target and target ~= "" then
     table.insert(cmd, target)
@@ -18,8 +21,7 @@ end
 ---Skips pattern rules (%), special targets (.), and variable assignments.
 ---@return string[]
 function M.targets()
-  local root = vim.fn.getcwd()
-  local path = detect.find_makefile(root)
+  local path = detect.find_makefile(M.project_root)
   if not path then
     return {}
   end

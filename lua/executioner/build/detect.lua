@@ -2,22 +2,42 @@ local M = {}
 
 local makefile_names = { "Makefile", "makefile", "GNUmakefile" }
 
----Priority: CMake > Meson > Make
----@param root string
+---Check a single directory for a build system file.
+---@param dir string
 ---@return string|nil system "cmake"|"make"|"meson"
-function M.detect(root)
-  if vim.fn.filereadable(root .. "/CMakeLists.txt") == 1 then
+local function detect_in(dir)
+  if vim.fn.filereadable(dir .. "/CMakeLists.txt") == 1 then
     return "cmake"
   end
-  if vim.fn.filereadable(root .. "/meson.build") == 1 then
+  if vim.fn.filereadable(dir .. "/meson.build") == 1 then
     return "meson"
   end
   for _, name in ipairs(makefile_names) do
-    if vim.fn.filereadable(root .. "/" .. name) == 1 then
+    if vim.fn.filereadable(dir .. "/" .. name) == 1 then
       return "make"
     end
   end
   return nil
+end
+
+---Walk upward from `start` to find a build system file.
+---Priority at each level: CMake > Meson > Make.
+---@param start string starting directory
+---@return string|nil system, string|nil root
+function M.detect(start)
+  local dir = start
+  while true do
+    local system = detect_in(dir)
+    if system then
+      return system, dir
+    end
+    local parent = vim.fn.fnamemodify(dir, ":h")
+    if parent == dir then
+      break
+    end
+    dir = parent
+  end
+  return nil, nil
 end
 
 ---@param root string

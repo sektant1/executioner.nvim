@@ -96,8 +96,8 @@ local function run_toggleterm(cmd, script, cwd)
 end
 
 function M.run(cmd, script)
-  -- Capture cwd NOW, before any new buffers/windows change context
-  local cwd = vim.fn.getcwd()
+  -- Use explicit cwd from build detection if set, otherwise fall back to Neovim cwd
+  local cwd = script.cwd or vim.fn.getcwd()
 
   local t = config.options.terminal.type
   if t == "split" then
