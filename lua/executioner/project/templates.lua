@@ -720,6 +720,12 @@ end
 
 -- ── .clangd ─────────────────────────────────────────────────────────
 
+local system_map = {
+  ["CMake"] = "cmake",
+  ["Make"] = "make",
+  ["Meson"] = "meson",
+}
+
 function M.clangd(opts)
   local sys = system_map[opts.build_system] or opts.build_system
   local db_dir = ""
@@ -738,12 +744,6 @@ function M.clangd(opts)
 end
 
 -- ── Main entry ──────────────────────────────────────────────────────
-
-local system_map = {
-  ["CMake"] = "cmake",
-  ["Make"] = "make",
-  ["Meson"] = "meson",
-}
 
 ---Generate all project files.
 ---@param opts table { name, build_system, language, project_type, standard, gitignore }

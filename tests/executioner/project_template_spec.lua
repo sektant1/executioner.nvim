@@ -19,7 +19,7 @@ describe("project.templates", function()
     }, overrides or {})
   end
 
-  -- CMake
+  -- ── CMake ─────────────────────────────────────────────────────
 
   describe("cmake", function()
     it("generates CMakeLists.txt for executable", function()
@@ -66,7 +66,7 @@ describe("project.templates", function()
     end)
   end)
 
-  -- Make
+  -- ── Make ──────────────────────────────────────────────────────
 
   describe("make", function()
     it("generates Makefile for executable with src/", function()
@@ -79,7 +79,7 @@ describe("project.templates", function()
       local _, content = templates.make.static(base_opts())
       assert.is_true(content:find("%-Iinclude") ~= nil)
       assert.is_true(content:find("src/testproj%.cpp") ~= nil)
-      assert.is_true(content:find("%$%(AR%) rcs") ~= nil)
+      assert.is_true(content:find("ar rcs") ~= nil)
     end)
 
     it("generates Makefile for shared library with -Iinclude and -fPIC", function()
@@ -110,7 +110,7 @@ describe("project.templates", function()
     end)
   end)
 
-  -- Meson
+  -- ── Meson ─────────────────────────────────────────────────────
 
   describe("meson", function()
     it("generates meson.build for executable with src/", function()
@@ -146,7 +146,7 @@ describe("project.templates", function()
     end)
   end)
 
-  -- Source files
+  -- ── Source files ──────────────────────────────────────────────
 
   describe("source_files", function()
     it("puts main.cpp in src/ for C++ executable", function()
@@ -197,7 +197,7 @@ describe("project.templates", function()
     end)
   end)
 
-  -- Full generate
+  -- ── Full generate ─────────────────────────────────────────────
 
   describe("generate", function()
     it("includes .gitignore when requested", function()
@@ -210,34 +210,34 @@ describe("project.templates", function()
       assert.is_nil(files[".gitignore"])
     end)
 
-    it("returns 2 files for executable without gitignore", function()
+    it("returns 3 files for executable without gitignore", function()
       local files = templates.generate(base_opts())
       local count = 0
       for _ in pairs(files) do
         count = count + 1
       end
-      -- CMakeLists.txt + src/main.cpp
-      assert.equals(2, count)
+      -- CMakeLists.txt + src/main.cpp + .clangd
+      assert.equals(3, count)
     end)
 
-    it("returns 3 files for static library without gitignore", function()
+    it("returns 4 files for static library without gitignore", function()
       local files = templates.generate(base_opts({ project_type = "Static Library" }))
       local count = 0
       for _ in pairs(files) do
         count = count + 1
       end
-      -- CMakeLists.txt + include/testproj.hpp + src/testproj.cpp
-      assert.equals(3, count)
+      -- CMakeLists.txt + include/testproj.hpp + src/testproj.cpp + .clangd
+      assert.equals(4, count)
     end)
 
-    it("returns 4 files for lib+exe without gitignore", function()
+    it("returns 5 files for lib+exe without gitignore", function()
       local files = templates.generate(base_opts({ project_type = "Library + Executable" }))
       local count = 0
       for _ in pairs(files) do
         count = count + 1
       end
-      -- CMakeLists.txt + include/testproj.hpp + src/testproj.cpp + src/main.cpp
-      assert.equals(4, count)
+      -- CMakeLists.txt + include/testproj.hpp + src/testproj.cpp + src/main.cpp + .clangd
+      assert.equals(5, count)
     end)
   end)
 end)
